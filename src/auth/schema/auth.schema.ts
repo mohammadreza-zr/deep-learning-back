@@ -1,6 +1,6 @@
-import * as mongoose from 'mongoose';
+import mongoose from 'mongoose';
 
-export const UsersSchema = new mongoose.Schema({
+export const AuthSchema = new mongoose.Schema({
   fullName: {
     type: String,
     required: true,
@@ -37,21 +37,8 @@ export const UsersSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
-
-export enum Rule {
-  'SUPER_ADMIN' = 'SUPER_ADMIN',
-  'ADMIN' = 'ADMIN',
-  'USER' = 'USER',
-}
-
-export interface Users extends mongoose.Document {
-  id: string;
-  fullName: string;
-  email: string;
-  emailVerified: boolean;
-  emailVerifyCode: number;
-  password: string;
-  rule: Rule;
-  createdAt: string;
-}
