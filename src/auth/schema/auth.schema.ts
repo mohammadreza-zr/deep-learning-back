@@ -18,10 +18,6 @@ export const AuthSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  emailVerifyCode: {
-    type: Number,
-    maxLength: 8,
-  },
   password: {
     type: String,
     required: true,
