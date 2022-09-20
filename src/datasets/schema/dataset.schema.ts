@@ -1,33 +1,29 @@
 import mongoose from 'mongoose';
 
-export const AuthSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
-    maxLength: 250,
-    trim: true,
-  },
-  email: {
+export const DatasetSchema = new mongoose.Schema({
+  title: {
     type: String,
     required: true,
     unique: true,
-    maxLength: 350,
     trim: true,
   },
-  emailVerified: {
-    type: Boolean,
-    default: false,
-  },
-  password: {
+  body: {
     type: String,
     required: true,
-    minLength: 8,
-    maxLength: 350,
   },
-  role: {
+  hashtag: {
+    type: Array,
+  },
+  author: {
     type: String,
-    default: 'USER',
-    enum: ['SUPER_ADMIN', 'ADMIN', 'USER'],
+    required: true,
+  },
+  views: {
+    type: Number,
+  },
+  imageUrl: {
+    type: String,
+    required: true,
   },
   createdAt: {
     type: Number,

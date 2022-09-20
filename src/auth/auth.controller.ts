@@ -10,9 +10,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { GetUser } from './decorator';
 import { CreateAuthDto, VerifyEmailToken } from './dto';
-import { JwtGuard } from './guard';
+import { JwtGuard, RolesGuard } from './guard';
+import { Roles } from './decorator';
+import { Role } from 'src/types';
 
 @Controller('auth')
 export class AuthController {
@@ -33,9 +34,10 @@ export class AuthController {
     return this.authService.login(loginAuthDto);
   }
 
-  @UseGuards(JwtGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
   @Patch('promote')
-  findAll(@GetUser('id') id: string, @Body() promoteAuthDto: PromoteAuthDto) {
-    return this.authService.promoteAdmin(id, promoteAuthDto);
+  findAll(@Body() promoteAuthDto: PromoteAuthDto) {
+    return this.authService.promoteAdmin(promoteAuthDto);
   }
 }

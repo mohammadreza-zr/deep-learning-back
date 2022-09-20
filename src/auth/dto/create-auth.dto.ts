@@ -1,11 +1,5 @@
 import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
 
-export enum Rule {
-  'SUPER_ADMIN' = 'SUPER_ADMIN',
-  'ADMIN' = 'ADMIN',
-  'USER' = 'USER',
-}
-
 export class CreateAuthDto {
   @IsNotEmpty()
   @IsString()

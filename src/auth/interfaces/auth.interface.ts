@@ -1,5 +1,5 @@
 import { Document } from 'mongoose';
-import { Rule } from '../dto';
+import { Role } from '../../types';
 
 export interface AuthInterface extends Document {
   id?: string;
@@ -8,6 +8,7 @@ export interface AuthInterface extends Document {
   emailVerified?: boolean;
   emailVerifyCode?: number;
   password: string;
-  rule?: Rule;
-  createdAt?: string;
+  role?: Role;
+  createdAt?: number;
+  updatedAt?: number;
 }

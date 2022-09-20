@@ -9,11 +9,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateAuthDto, Rule } from './dto';
+import { CreateAuthDto } from './dto';
 import { AuthInterface } from './interfaces';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
-import { sendEmail } from 'src/utils/mailer';
+import { Role } from '../types';
+import { MailerService } from '@nestjs-modules/mailer';
+import { VerifyEmailTemplate } from 'src/templates';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +23,7 @@ export class AuthService {
     private config: ConfigService,
     private jwt: JwtService,
     @InjectModel('Auth') private readonly authModel: Model<AuthInterface>,
+    private readonly mailerService: MailerService,
   ) {}
 
   async create(createAuthDto: CreateAuthDto) {
@@ -49,28 +52,33 @@ export class AuthService {
           },
         );
 
-        const mailError = await sendEmail(
-          result.email,
-          result.fullName,
-          'signUp',
-          token,
-        );
-
-        if (mailError)
-          return {
-            statusCode: 500,
-            message: 'error when sending email! but account has been created!',
-            error: 'mail error',
-          };
+        this.mailerService
+          .sendMail({
+            to: result.email, // list of receivers
+            from: 'noreply@asalsatiya.com', // sender address
+            subject: `Verify email ✔`, // Subject line
+            html: VerifyEmailTemplate(
+              `http://192.168.1.102:5000/auth/verify/${token}`,
+              result.fullName,
+            ), // HTML body content
+          })
+          .then(() => {})
+          .catch((err) => {
+            console.log(err);
+          });
 
         // return jwt token and user data
-        const { access_token } = await this.signToken(result.id, result.email);
+        const { access_token } = await this.signToken(
+          result.id,
+          result.email,
+          result.role,
+        );
 
         return {
           id: result.id,
           fullName: result.fullName,
           createdAt: result.createdAt,
-          rule: result.rule,
+          role: result.role,
           token: access_token,
         };
       } catch (err) {
@@ -88,14 +96,18 @@ export class AuthService {
     const password = await argon.verify(user.password, login.password);
     if (!password) throw new ForbiddenException('credentials incorrect!');
 
-    const { access_token } = await this.signToken(user.id, user.email);
+    const { access_token } = await this.signToken(
+      user.id,
+      user.email,
+      user.role,
+    );
 
     //return jwt token
     return {
       id: user.id,
       fullName: user.fullName,
       createdAt: user.createdAt,
-      rule: user.rule,
+      role: user.role,
       token: access_token,
     };
   }
@@ -125,18 +137,13 @@ export class AuthService {
     return 'tank you for verify.';
   }
 
-  async promoteAdmin(id: string, promote: PromoteAuthDto) {
-    //find admin and check rule
-    const admin = await this.authModel.findById(id);
-    if (!admin) throw new ForbiddenException('credentials incorrect!');
-    if (admin.rule !== Rule.SUPER_ADMIN)
-      throw new ForbiddenException('permission denied!');
-
-    //find user and promote rule
+  async promoteAdmin(promote: PromoteAuthDto) {
+    //find user and promote role
     const user = await this.findUserWithEmail(promote.email);
     if (!user) throw new NotFoundException('user not Found!');
 
-    user.rule = Rule.ADMIN;
+    user.role = Role.ADMIN;
+    user.updatedAt = Date.now();
     await user.save();
 
     //return ok
@@ -160,9 +167,11 @@ export class AuthService {
   private async signToken(
     userId: string,
     email: string,
+    role: string,
   ): Promise<{ access_token: string }> {
     const payload = {
       sub: userId,
+      role: role,
       email,
     };
     const token = await this.jwt.signAsync(payload, {

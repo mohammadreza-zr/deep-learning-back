@@ -1,34 +1,106 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Query,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtGuard, RolesGuard } from 'src/auth/guard';
 import { DatasetsService } from './datasets.service';
-import { CreateDatasetDto } from './dto/create-dataset.dto';
-import { UpdateDatasetDto } from './dto/update-dataset.dto';
+import { diskStorage } from 'multer';
+import * as path from 'path';
+import { v4 as uuidV4 } from 'uuid';
+import { GetUser, Roles } from 'src/auth/decorator';
+import { ApiBody, ApiCreatedResponse, ApiOperation } from '@nestjs/swagger';
+import { Role } from 'src/types';
+import {
+  CreateDatasetDto,
+  QueryDatasetDto,
+  SearchTitleDatasetDto,
+} from './dto';
+
+const storage = {
+  storage: diskStorage({
+    destination: './uploads/datasetImages',
+    filename: (req, file, cb) => {
+      const filename: string =
+        path.parse(file.originalname).name.replace(/\s/g, '') + uuidV4();
+      const extension: string = path.parse(file.originalname).ext;
+
+      cb(null, `${filename}${extension}`);
+    },
+  }),
+};
 
 @Controller('datasets')
 export class DatasetsController {
   constructor(private readonly datasetsService: DatasetsService) {}
 
-  @Post()
-  create(@Body() createDatasetDto: CreateDatasetDto) {
-    return this.datasetsService.create(createDatasetDto);
+  //create a dataset with upload file - protected for admins
+  @ApiOperation({ summary: 'create dataset' })
+  @ApiBody({
+    description: 'this api need to call with form-data and send image file',
+    schema: {
+      title: 'dataset',
+      example: {
+        title: 'dataset-title',
+        body: 'this is a body for dataset',
+        hashtag: ['test', 'test2'],
+        file: 'image file!',
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'just return ok',
+  })
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Post('image')
+  @UseInterceptors(FileInterceptor('file', storage))
+  uploader(
+    @GetUser('id') id: string,
+    @UploadedFile() file,
+    @Body() createDatasetDto: CreateDatasetDto,
+  ) {
+    return this.datasetsService.create(
+      id,
+      `datasetImages/${file.filename}`,
+      createDatasetDto,
+    );
   }
 
+  //search in title - protected for admins
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Get('title/:title')
+  findTitle(@Param() title: SearchTitleDatasetDto) {
+    return this.datasetsService.findTitle(title.title);
+  }
+
+  //dataset list - pagination with query
   @Get()
-  findAll() {
-    return this.datasetsService.findAll();
+  findAll(@Query() query: QueryDatasetDto) {
+    const limit = 20;
+    const skip = query.skip ? query.skip : 0;
+    return this.datasetsService.findAll(+skip, limit);
   }
 
-  @Get(':id')
+  //single dataset with id and similar datasets
+  @Get('single/:id')
   findOne(@Param('id') id: string) {
-    return this.datasetsService.findOne(+id);
+    return this.datasetsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDatasetDto: UpdateDatasetDto) {
-    return this.datasetsService.update(+id, updateDatasetDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.datasetsService.remove(+id);
+  //search in datasets with pagination
+  @Get(':search')
+  All(@Param('search') search: string, @Query() query: QueryDatasetDto) {
+    const skip = query.skip ? query.skip : 0;
+    const limit = 20;
+    return this.datasetsService.search(+skip, limit, search);
   }
 }
