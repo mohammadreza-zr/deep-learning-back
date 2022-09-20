@@ -1,6 +1,4 @@
-import { PromoteAuthDto } from './dto/promote-auth.dto';
 import { ConfigService } from '@nestjs/config';
-import { LoginAuthDto } from './dto/login-auth.dto';
 import {
   ForbiddenException,
   HttpException,
@@ -9,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateAuthDto } from './dto';
+import { LoginAuthDto, PromoteAuthDto, RegisterAuthDto } from './dto';
 import { AuthInterface } from './interfaces';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
@@ -26,20 +24,20 @@ export class AuthService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async create(createAuthDto: CreateAuthDto) {
+  async register(registerAuthDto: RegisterAuthDto) {
     // check for user exist
-    const user = await this.findUserWithEmail(createAuthDto.email);
+    const user = await this.findUserWithEmail(registerAuthDto.email);
     if (user) {
       throw new ForbiddenException('user found!');
     } else {
       try {
         //create hash for password
-        const hash = await argon.hash(createAuthDto.password);
+        const hash = await argon.hash(registerAuthDto.password);
 
         //save on database
         const newUser = new this.authModel({
-          fullName: createAuthDto.fullName,
-          email: createAuthDto.email,
+          fullName: registerAuthDto.fullName,
+          email: registerAuthDto.email,
           password: hash,
         });
         const result: AuthInterface = await newUser.save();

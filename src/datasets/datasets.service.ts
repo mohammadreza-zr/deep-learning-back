@@ -68,9 +68,7 @@ export class DatasetsService {
       return {
         id: dataset.id,
         title: dataset.title,
-        body: dataset.body,
         hashtag: dataset.hashtag,
-        imageUrl: dataset.imageUrl,
       };
     });
 
@@ -107,9 +105,7 @@ export class DatasetsService {
       return {
         id: dataset.id,
         title: dataset.title,
-        body: dataset.body,
         hashtag: dataset.hashtag,
-        imageUrl: dataset.imageUrl,
       };
     });
 
@@ -138,9 +134,7 @@ export class DatasetsService {
       return {
         id: dataset.id,
         title: dataset.title,
-        body: dataset.body,
         hashtag: dataset.hashtag,
-        imageUrl: dataset.imageUrl,
       };
     });
 

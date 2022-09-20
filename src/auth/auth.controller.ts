@@ -1,5 +1,3 @@
-import { PromoteAuthDto } from './dto/promote-auth.dto';
-import { LoginAuthDto } from './dto/login-auth.dto';
 import {
   Controller,
   Get,
@@ -10,7 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto, VerifyEmailToken } from './dto';
+import {
+  LoginAuthDto,
+  PromoteAuthDto,
+  RegisterAuthDto,
+  VerifyEmailToken,
+} from './dto';
 import { JwtGuard, RolesGuard } from './guard';
 import { Roles } from './decorator';
 import { Role } from 'src/types';
@@ -20,12 +23,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  register(@Body() createAuthDto: RegisterAuthDto) {
+    return this.authService.register(createAuthDto);
   }
 
   @Get('verify/:token')
-  verify(@Param() params: VerifyEmailToken) {
+  verifyEmail(@Param() params: VerifyEmailToken) {
     return this.authService.verifyEmail(params.token);
   }
 
@@ -37,7 +40,7 @@ export class AuthController {
   @Roles(Role.SUPER_ADMIN)
   @UseGuards(JwtGuard, RolesGuard)
   @Patch('promote')
-  findAll(@Body() promoteAuthDto: PromoteAuthDto) {
+  promoteToAdmin(@Body() promoteAuthDto: PromoteAuthDto) {
     return this.authService.promoteAdmin(promoteAuthDto);
   }
 }

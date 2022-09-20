@@ -60,9 +60,9 @@ export class DatasetsController {
   })
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @UseGuards(JwtGuard, RolesGuard)
-  @Post('image')
+  @Post('create')
   @UseInterceptors(FileInterceptor('file', storage))
-  uploader(
+  Create(
     @GetUser('id') id: string,
     @UploadedFile() file,
     @Body() createDatasetDto: CreateDatasetDto,
@@ -75,6 +75,7 @@ export class DatasetsController {
   }
 
   //search in title - protected for admins
+  @ApiOperation({ summary: 'search in titles' })
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @UseGuards(JwtGuard, RolesGuard)
   @Get('title/:title')
@@ -83,6 +84,7 @@ export class DatasetsController {
   }
 
   //dataset list - pagination with query
+  @ApiOperation({ summary: 'return all datasets with pagination' })
   @Get()
   findAll(@Query() query: QueryDatasetDto) {
     const limit = 20;
@@ -91,14 +93,16 @@ export class DatasetsController {
   }
 
   //single dataset with id and similar datasets
+  @ApiOperation({ summary: 'return one dataset' })
   @Get('single/:id')
   findOne(@Param('id') id: string) {
     return this.datasetsService.findOne(id);
   }
 
   //search in datasets with pagination
+  @ApiOperation({ summary: 'search in datasets with pagination' })
   @Get(':search')
-  All(@Param('search') search: string, @Query() query: QueryDatasetDto) {
+  Search(@Param('search') search: string, @Query() query: QueryDatasetDto) {
     const skip = query.skip ? query.skip : 0;
     const limit = 20;
     return this.datasetsService.search(+skip, limit, search);
