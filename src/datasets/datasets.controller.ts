@@ -89,7 +89,10 @@ export class DatasetsController {
   findAll(@Query() query: QueryDatasetDto) {
     const limit = 20;
     const skip = query.skip ? query.skip : 0;
-    return this.datasetsService.findAll(+skip, limit);
+    const hashtag = query.hashtag
+      ? query.hashtag
+      : new RegExp('.*' + '' + '.*');
+    return this.datasetsService.findAll(+skip, limit, hashtag);
   }
 
   //single dataset with id and similar datasets
@@ -105,6 +108,9 @@ export class DatasetsController {
   Search(@Param('search') search: string, @Query() query: QueryDatasetDto) {
     const skip = query.skip ? query.skip : 0;
     const limit = 20;
-    return this.datasetsService.search(+skip, limit, search);
+    const hashtag = query.hashtag
+      ? query.hashtag
+      : new RegExp('.*' + '' + '.*');
+    return this.datasetsService.search(+skip, limit, search, hashtag);
   }
 }

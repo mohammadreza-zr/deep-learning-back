@@ -4,4 +4,8 @@ export class QueryDatasetDto {
   @IsOptional()
   @IsString()
   skip: string;
+
+  @IsOptional()
+  @IsString()
+  hashtag: string;
 }

@@ -55,11 +55,17 @@ export class DatasetsService {
     return result;
   }
 
-  async findAll(skip: number, limit: number) {
-    const count = await this.datasetModel.find().count();
+  async findAll(skip: number, limit: number, hashtag: string | RegExp) {
+    const count = await this.datasetModel
+      .find({
+        hashtag: hashtag,
+      })
+      .count();
 
     const datasets = await this.datasetModel
-      .find()
+      .find({
+        hashtag: hashtag,
+      })
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: 1 });
@@ -78,13 +84,23 @@ export class DatasetsService {
     };
   }
 
-  async search(skip: number, limit: number, search: string) {
+  async search(
+    skip: number,
+    limit: number,
+    search: string,
+    hashtag: string | RegExp,
+  ) {
     const count = await this.datasetModel
       .find({
         $or: [
           { title: new RegExp('.*' + search + '.*') },
           { hashtag: new RegExp('.*' + search + '.*') },
           { body: new RegExp('.*' + search + '.*') },
+        ],
+        $and: [
+          {
+            hashtag: hashtag,
+          },
         ],
       })
       .count();
@@ -95,6 +111,11 @@ export class DatasetsService {
           { title: new RegExp('.*' + search + '.*') },
           { hashtag: new RegExp('.*' + search + '.*') },
           { body: new RegExp('.*' + search + '.*') },
+        ],
+        $and: [
+          {
+            hashtag: hashtag,
+          },
         ],
       })
       .skip(skip)
