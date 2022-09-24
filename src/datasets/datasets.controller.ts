@@ -8,6 +8,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtGuard, RolesGuard } from 'src/auth/guard';
@@ -67,6 +69,8 @@ export class DatasetsController {
     @UploadedFile() file,
     @Body() createDatasetDto: CreateDatasetDto,
   ) {
+    if (!file)
+      throw new HttpException('file is required!', HttpStatus.BAD_REQUEST);
     return this.datasetsService.create(
       id,
       `datasetImages/${file.filename}`,
@@ -97,9 +101,9 @@ export class DatasetsController {
 
   //single dataset with id and similar datasets
   @ApiOperation({ summary: 'return one dataset' })
-  @Get('single/:id')
-  findOne(@Param('id') id: string) {
-    return this.datasetsService.findOne(id);
+  @Get('single/:title')
+  findOne(@Param() title: SearchTitleDatasetDto) {
+    return this.datasetsService.findOne(title.title);
   }
 
   //search in datasets with pagination

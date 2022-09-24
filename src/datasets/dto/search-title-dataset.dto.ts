@@ -1,7 +1,11 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsString, Matches, IsDefined } from 'class-validator';
 
+const pattern = /^[a-z\d\-_\s]+$/i;
 export class SearchTitleDatasetDto {
-  @IsNotEmpty()
+  @IsDefined()
   @IsString()
+  @Matches(pattern, {
+    message: 'Not Allowed!',
+  })
   title: string;
 }

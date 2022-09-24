@@ -5,8 +5,19 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.use(helmet());
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: ['http://localhost:3000', 'https://deep.mr-zare.ir'],
+      credentials: true,
+    },
+  });
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

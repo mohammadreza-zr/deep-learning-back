@@ -1,6 +1,8 @@
 import { DatasetInterface } from './interfaces/dataset.interface';
 import {
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,12 +17,14 @@ export class DatasetsService {
     private readonly datasetModel: Model<DatasetInterface>,
   ) {}
 
-  async create(
-    id: string,
-    imagePath: string,
-    createDatasetDto: CreateDatasetDto,
-  ) {
+  async create(id: string, imagePath: string, createDatasetDto: any) {
     //check for title is exist?
+    if (!createDatasetDto?.title?.trim())
+      throw new HttpException(
+        'title should not be empty',
+        HttpStatus.BAD_REQUEST,
+      );
+
     const oldDataset = await this.datasetModel
       .findOne({
         title: createDatasetDto.title,
@@ -136,8 +140,12 @@ export class DatasetsService {
     };
   }
 
-  async findOne(id: string) {
-    const dataset = await this.datasetModel.findById(id);
+  async findOne(title: string) {
+    const dataset = await this.datasetModel
+      .findOne({
+        title,
+      })
+      .exec();
     if (!dataset) throw new NotFoundException('dataset not found!');
 
     const datasets = await this.datasetModel
@@ -156,6 +164,7 @@ export class DatasetsService {
         id: dataset.id,
         title: dataset.title,
         hashtag: dataset.hashtag,
+        imageUrl: dataset.imageUrl,
       };
     });
 
