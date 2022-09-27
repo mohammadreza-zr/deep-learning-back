@@ -9,6 +9,7 @@ import {
 import { CreateDatasetDto } from './dto';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { hash } from 'argon2';
 
 @Injectable()
 export class DatasetsService {
@@ -33,12 +34,14 @@ export class DatasetsService {
 
     if (oldDataset) throw new ForbiddenException('title is exist!');
 
+    const hashtags = createDatasetDto?.hashtag?.filter((item: any) => item);
+
     //save dataset i database
     const newDataset = new this.datasetModel({
       imageUrl: imagePath,
       title: createDatasetDto.title,
       body: createDatasetDto.body,
-      hashtag: createDatasetDto.hashtag,
+      hashtag: hashtags,
       author: id,
       views: 0,
     });
@@ -159,7 +162,10 @@ export class DatasetsService {
       .limit(10)
       .sort({ createdAt: 1 });
 
-    const filteredDatasets = datasets.map((dataset: DatasetInterface) => {
+    const filteredDatasets = datasets.filter((dataset: DatasetInterface) => {
+      if (title === dataset.title) {
+        return false;
+      }
       return {
         id: dataset.id,
         title: dataset.title,
