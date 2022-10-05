@@ -110,37 +110,61 @@ export class DatasetsService {
     let count = null,
       datasets = null;
     try {
-      count = await this.datasetModel
-        .find({
-          $or: [
-            { title: { $regex: regex } },
-            { hashtag: { $regex: regex } },
-            { body: { $regex: regex } },
-          ],
-          $and: [
-            {
-              hashtag: hashtag,
-            },
-          ],
-        })
-        .count();
+      if (hashtag) {
+        count = await this.datasetModel
+          .find({
+            $or: [
+              { title: { $regex: regex } },
+              { hashtag: { $regex: search } },
+              { body: { $regex: regex } },
+            ],
+            $and: [
+              {
+                hashtag: hashtag,
+              },
+            ],
+          })
+          .count();
 
-      datasets = await this.datasetModel
-        .find({
-          $or: [
-            { title: { $regex: regex } },
-            { hashtag: { $regex: regex } },
-            { body: { $regex: regex } },
-          ],
-          $and: [
-            {
-              hashtag: hashtag,
-            },
-          ],
-        })
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: 1 });
+        datasets = await this.datasetModel
+          .find({
+            $or: [
+              { title: { $regex: regex } },
+              { hashtag: { $regex: search } },
+              { body: { $regex: regex } },
+            ],
+            $and: [
+              {
+                hashtag: hashtag,
+              },
+            ],
+          })
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: 1 });
+      } else {
+        count = await this.datasetModel
+          .find({
+            $or: [
+              { title: { $regex: regex } },
+              { hashtag: { $regex: search } },
+              { body: { $regex: regex } },
+            ],
+          })
+          .count();
+
+        datasets = await this.datasetModel
+          .find({
+            $or: [
+              { title: { $regex: regex } },
+              { hashtag: { $regex: search } },
+              { body: { $regex: regex } },
+            ],
+          })
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: 1 });
+      }
     } catch (error) {
       throw new HttpException('Error', HttpStatus.BAD_REQUEST);
     }
@@ -178,7 +202,6 @@ export class DatasetsService {
     const filteredBody = dataset.body.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '');
 
     const titleRegex = `.*${filteredTitle}.*`;
-    const hashtagRegex = `.*${filteredHashtag}.*`;
     const bodyRegex = `.*${filteredBody}.*`;
     let datasets = null;
 
@@ -188,7 +211,7 @@ export class DatasetsService {
           $or: [
             { title: { $regex: titleRegex } },
             {
-              hashtag: { $regex: hashtagRegex },
+              hashtag: { $regex: filteredHashtag },
             },
             { body: { $regex: bodyRegex } },
           ],

@@ -145,9 +145,7 @@ export class DatasetsController {
   Search(@Param() search: SearchDto, @Query() query: QueryDatasetDto) {
     const skip = query.skip ? query.skip : 0;
     const limit = 20;
-    const hashtag = query.hashtag
-      ? query.hashtag?.trim()
-      : new RegExp('.*' + '' + '.*');
+    const hashtag = query.hashtag ? query.hashtag?.trim() : null;
     if (!search.search) throw new ForbiddenException('Empty Not Allowed');
     return this.datasetsService.search(+skip, limit, search.search, hashtag);
   }
