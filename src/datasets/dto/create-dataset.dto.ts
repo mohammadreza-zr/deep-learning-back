@@ -9,6 +9,9 @@ import { alphabetNumberSpaceUnderscoreDash } from 'src/validate-patterns';
 
 class Hashtag {
   @IsString()
+  @Matches(alphabetNumberSpaceUnderscoreDash, {
+    message: 'hashtag not allowed!',
+  })
   hashtag: string;
 }
 

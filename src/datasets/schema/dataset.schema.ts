@@ -20,6 +20,7 @@ export const DatasetSchema = new mongoose.Schema({
   },
   views: {
     type: Number,
+    default: 0,
   },
   imageUrl: {
     type: String,

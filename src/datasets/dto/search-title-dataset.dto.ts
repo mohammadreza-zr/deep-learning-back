@@ -1,10 +1,10 @@
-import { IsString, Matches, IsDefined } from 'class-validator';
+import { alphabetNumberSpaceUnderscoreDash } from 'src/validate-patterns';
+import { IsString, Matches, IsDefined, IsNotEmpty } from 'class-validator';
 
-const pattern = /^[a-z\d\-_\s]+$/i;
 export class SearchTitleDatasetDto {
-  @IsDefined()
+  @IsNotEmpty()
   @IsString()
-  @Matches(pattern, {
+  @Matches(alphabetNumberSpaceUnderscoreDash, {
     message: 'Not Allowed!',
   })
   title: string;

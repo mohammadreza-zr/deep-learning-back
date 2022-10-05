@@ -10,6 +10,7 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtGuard, RolesGuard } from 'src/auth/guard';
@@ -18,11 +19,18 @@ import { diskStorage } from 'multer';
 import * as path from 'path';
 import { v4 as uuidV4 } from 'uuid';
 import { GetUser, Roles } from 'src/auth/decorator';
-import { ApiBody, ApiCreatedResponse, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from 'src/types';
 import {
   CreateDatasetDto,
   QueryDatasetDto,
+  SearchDto,
   SearchTitleDatasetDto,
 } from './dto';
 
@@ -80,16 +88,37 @@ export class DatasetsController {
 
   //search in title - protected for admins
   @ApiOperation({ summary: 'search in titles' })
+  @ApiQuery({
+    description:
+      'this api search in datasets title for exist, incoming text will be filter for symbol characters.',
+    example: 'this is a title',
+  })
+  @ApiCreatedResponse({
+    description: 'return list of titles',
+  })
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @UseGuards(JwtGuard, RolesGuard)
   @Get('title/:title')
   findTitle(@Param() title: SearchTitleDatasetDto) {
+    if (!!!title.title)
+      throw new HttpException('title is required!', HttpStatus.BAD_REQUEST);
     return this.datasetsService.findTitle(title.title);
   }
 
   //dataset list - pagination with query
   @ApiOperation({ summary: 'return all datasets with pagination' })
-  @Get()
+  @ApiQuery({
+    name: 'skip',
+    example: '1',
+  })
+  @ApiQuery({
+    name: 'hashtag',
+    example: 'HASHTAG text',
+  })
+  @ApiCreatedResponse({
+    description: 'return list of datasets',
+  })
+  @Get('list')
   findAll(@Query() query: QueryDatasetDto) {
     const limit = 20;
     const skip = query.skip ? query.skip : 0;
@@ -101,6 +130,10 @@ export class DatasetsController {
 
   //single dataset with id and similar datasets
   @ApiOperation({ summary: 'return one dataset' })
+  @ApiCreatedResponse({
+    description:
+      'return one dataset information and similar datasets with:[title,hashtag[0],body]',
+  })
   @Get('single/:title')
   findOne(@Param() title: SearchTitleDatasetDto) {
     return this.datasetsService.findOne(title.title);
@@ -108,13 +141,14 @@ export class DatasetsController {
 
   //search in datasets with pagination
   @ApiOperation({ summary: 'search in datasets with pagination' })
-  @Get(':search')
-  Search(@Param('search') search: string, @Query() query: QueryDatasetDto) {
+  @Get('list/:search')
+  Search(@Param() search: SearchDto, @Query() query: QueryDatasetDto) {
     const skip = query.skip ? query.skip : 0;
     const limit = 20;
     const hashtag = query.hashtag
-      ? query.hashtag
+      ? query.hashtag?.trim()
       : new RegExp('.*' + '' + '.*');
-    return this.datasetsService.search(+skip, limit, search, hashtag);
+    if (!search.search) throw new ForbiddenException('Empty Not Allowed');
+    return this.datasetsService.search(+skip, limit, search.search, hashtag);
   }
 }

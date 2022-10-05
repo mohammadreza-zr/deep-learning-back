@@ -7,7 +7,11 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     cors: {
-      origin: ['http://localhost:3000', 'https://deep.mr-zare.ir'],
+      origin: [
+        'http://localhost:3000',
+        'http://deep.mr-zare.ir',
+        'https://deep.mr-zare.ir',
+      ],
       credentials: true,
     },
   });

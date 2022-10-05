@@ -6,10 +6,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateDatasetDto } from './dto';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { hash } from 'argon2';
 
 @Injectable()
 export class DatasetsService {
@@ -43,7 +41,6 @@ export class DatasetsService {
       body: createDatasetDto.body,
       hashtag: hashtags,
       author: id,
-      views: 0,
     });
     await newDataset.save();
 
@@ -54,12 +51,23 @@ export class DatasetsService {
   }
 
   async findTitle(title: string) {
-    const result = await this.datasetModel
-      .find({
-        title: new RegExp('.*' + title + '.*'),
-      })
-      .limit(6);
-    return result;
+    title = title.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '');
+    const regex = `.*${title}.*`;
+    if (!!title.trim()) {
+      let result = null;
+      try {
+        result = await this.datasetModel
+          .find({
+            title: new RegExp(regex),
+          })
+          .limit(6);
+      } catch (error) {
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      }
+      return result;
+    } else {
+      throw new HttpException('Title is empty!', HttpStatus.BAD_REQUEST);
+    }
   }
 
   async findAll(skip: number, limit: number, hashtag: string | RegExp) {
@@ -97,37 +105,45 @@ export class DatasetsService {
     search: string,
     hashtag: string | RegExp,
   ) {
-    const count = await this.datasetModel
-      .find({
-        $or: [
-          { title: new RegExp('.*' + search + '.*') },
-          { hashtag: new RegExp('.*' + search + '.*') },
-          { body: new RegExp('.*' + search + '.*') },
-        ],
-        $and: [
-          {
-            hashtag: hashtag,
-          },
-        ],
-      })
-      .count();
+    search = search.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '');
+    const regex = `.*.${search.trim()}.*`;
+    let count = null,
+      datasets = null;
+    try {
+      count = await this.datasetModel
+        .find({
+          $or: [
+            { title: { $regex: regex } },
+            { hashtag: { $regex: regex } },
+            { body: { $regex: regex } },
+          ],
+          $and: [
+            {
+              hashtag: hashtag,
+            },
+          ],
+        })
+        .count();
 
-    const datasets = await this.datasetModel
-      .find({
-        $or: [
-          { title: new RegExp('.*' + search + '.*') },
-          { hashtag: new RegExp('.*' + search + '.*') },
-          { body: new RegExp('.*' + search + '.*') },
-        ],
-        $and: [
-          {
-            hashtag: hashtag,
-          },
-        ],
-      })
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: 1 });
+      datasets = await this.datasetModel
+        .find({
+          $or: [
+            { title: { $regex: regex } },
+            { hashtag: { $regex: regex } },
+            { body: { $regex: regex } },
+          ],
+          $and: [
+            {
+              hashtag: hashtag,
+            },
+          ],
+        })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: 1 });
+    } catch (error) {
+      throw new HttpException('Error', HttpStatus.BAD_REQUEST);
+    }
 
     const filteredDatasets = datasets.map((dataset: DatasetInterface) => {
       return {
@@ -151,16 +167,40 @@ export class DatasetsService {
       .exec();
     if (!dataset) throw new NotFoundException('dataset not found!');
 
-    const datasets = await this.datasetModel
-      .find({
-        $or: [
-          { title: new RegExp('.*' + dataset.title + '.*') },
-          { hashtag: new RegExp('.*' + dataset.hashtag + '.*') },
-          { body: new RegExp('.*' + dataset.body + '.*') },
-        ],
-      })
-      .limit(10)
-      .sort({ createdAt: 1 });
+    const filteredTitle = dataset.title.replace(
+      /[&\/\\#,+()$~%.'":*?<>{}]/g,
+      '',
+    );
+    const filteredHashtag = dataset.hashtag[0]?.replace(
+      /[&\/\\#,+()$~%.'":*?<>{}]/g,
+      '',
+    );
+    const filteredBody = dataset.body.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '');
+
+    const titleRegex = `.*${filteredTitle}.*`;
+    const hashtagRegex = `.*${filteredHashtag}.*`;
+    const bodyRegex = `.*${filteredBody}.*`;
+    let datasets = null;
+
+    try {
+      datasets = await this.datasetModel
+        .find({
+          $or: [
+            { title: { $regex: titleRegex } },
+            {
+              hashtag: { $regex: hashtagRegex },
+            },
+            { body: { $regex: bodyRegex } },
+          ],
+        })
+        .limit(10)
+        .sort({ createdAt: 1 });
+    } catch (error) {
+      throw new HttpException(
+        'Error from server, please try other page',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     const filteredDatasets = datasets.filter((dataset: DatasetInterface) => {
       if (title === dataset.title) {
@@ -173,6 +213,9 @@ export class DatasetsService {
         imageUrl: dataset.imageUrl,
       };
     });
+
+    dataset.views = dataset.views + 1;
+    await dataset.save();
 
     return {
       title: dataset.title,
